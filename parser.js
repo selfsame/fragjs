@@ -38,16 +38,13 @@ window.peg = (function(){
     parse: function(input, startRule) {
       var parseFunctions = {
         "start": parse_start,
-        "statement": parse_statement,
+        "block": parse_block,
         "assign": parse_assign,
         "chain": parse_chain,
-        "set": parse_set,
-        "unit": parse_unit,
         "element": parse_element,
         "cs": parse_cs,
         "id": parse_id,
         "label": parse_label,
-        "symbol": parse_symbol,
         "slash": parse_slash,
         "dot": parse_dot,
         "pound": parse_pound,
@@ -57,13 +54,18 @@ window.peg = (function(){
         "keyprop": parse_keyprop,
         "string": parse_string,
         "arg": parse_arg,
+        "symbol": parse_symbol,
+        "slash": parse_slash,
         "number": parse_number,
         "float": parse_float,
         "integer": parse_integer,
-        "nlw": parse_nlw,
+        "tab": parse_tab,
         "w": parse_w,
+        "EOL": parse_EOL,
         "newline": parse_newline,
-        "tab": parse_tab
+        "SAMEDENT": parse_SAMEDENT,
+        "INDENT": parse_INDENT,
+        "DEDENT": parse_DEDENT
       };
       
       if (startRule !== undefined) {
@@ -120,99 +122,109 @@ window.peg = (function(){
       }
       
       function parse_start() {
-        var result0, result1;
+        var result0;
+        var pos0;
         
-        result0 = [];
-        result1 = parse_statement();
-        while (result1 !== null) {
-          result0.push(result1);
-          result1 = parse_statement();
+        pos0 = pos;
+        result0 = parse_block();
+        if (result0 !== null) {
+          result0 = (function(offset, b) {return b})(pos0, result0);
+        }
+        if (result0 === null) {
+          pos = pos0;
         }
         return result0;
       }
       
-      function parse_statement() {
+      function parse_block() {
         var result0, result1, result2, result3, result4;
-        var pos0, pos1, pos2;
+        var pos0, pos1, pos2, pos3;
         
         pos0 = pos;
         pos1 = pos;
-        result0 = [];
         pos2 = pos;
-        result1 = parse_w();
+        pos3 = pos;
+        result1 = parse_SAMEDENT();
         if (result1 !== null) {
-          result2 = parse_newline();
+          result2 = parse_assign();
+          if (result2 === null) {
+            result2 = parse_chain();
+          }
           if (result2 !== null) {
-            result1 = [result1, result2];
+            result3 = [];
+            result4 = parse_EOL();
+            while (result4 !== null) {
+              result3.push(result4);
+              result4 = parse_EOL();
+            }
+            if (result3 !== null) {
+              result1 = [result1, result2, result3];
+            } else {
+              result1 = null;
+              pos = pos3;
+            }
           } else {
             result1 = null;
-            pos = pos2;
+            pos = pos3;
           }
         } else {
           result1 = null;
+          pos = pos3;
+        }
+        if (result1 !== null) {
+          result1 = (function(offset, l) {return l})(pos2, result1[1]);
+        }
+        if (result1 === null) {
           pos = pos2;
         }
-        while (result1 !== null) {
-          result0.push(result1);
-          pos2 = pos;
-          result1 = parse_w();
-          if (result1 !== null) {
-            result2 = parse_newline();
-            if (result2 !== null) {
-              result1 = [result1, result2];
-            } else {
-              result1 = null;
-              pos = pos2;
-            }
-          } else {
-            result1 = null;
-            pos = pos2;
-          }
-        }
-        if (result0 !== null) {
-          result1 = parse_assign();
-          if (result1 === null) {
-            result1 = parse_chain();
-          }
-          if (result1 !== null) {
-            result2 = [];
+        if (result1 !== null) {
+          result0 = [];
+          while (result1 !== null) {
+            result0.push(result1);
             pos2 = pos;
-            result3 = parse_w();
-            if (result3 !== null) {
-              result4 = parse_newline();
-              if (result4 !== null) {
-                result3 = [result3, result4];
-              } else {
-                result3 = null;
-                pos = pos2;
+            pos3 = pos;
+            result1 = parse_SAMEDENT();
+            if (result1 !== null) {
+              result2 = parse_assign();
+              if (result2 === null) {
+                result2 = parse_chain();
               }
-            } else {
-              result3 = null;
-              pos = pos2;
-            }
-            while (result3 !== null) {
-              result2.push(result3);
-              pos2 = pos;
-              result3 = parse_w();
-              if (result3 !== null) {
-                result4 = parse_newline();
-                if (result4 !== null) {
-                  result3 = [result3, result4];
+              if (result2 !== null) {
+                result3 = [];
+                result4 = parse_EOL();
+                while (result4 !== null) {
+                  result3.push(result4);
+                  result4 = parse_EOL();
+                }
+                if (result3 !== null) {
+                  result1 = [result1, result2, result3];
                 } else {
-                  result3 = null;
-                  pos = pos2;
+                  result1 = null;
+                  pos = pos3;
                 }
               } else {
-                result3 = null;
-                pos = pos2;
+                result1 = null;
+                pos = pos3;
               }
-            }
-            if (result2 !== null) {
-              result0 = [result0, result1, result2];
             } else {
-              result0 = null;
-              pos = pos1;
+              result1 = null;
+              pos = pos3;
             }
+            if (result1 !== null) {
+              result1 = (function(offset, l) {return l})(pos2, result1[1]);
+            }
+            if (result1 === null) {
+              pos = pos2;
+            }
+          }
+        } else {
+          result0 = null;
+        }
+        if (result0 !== null) {
+          result1 = parse_DEDENT();
+          result1 = result1 !== null ? result1 : "";
+          if (result1 !== null) {
+            result0 = [result0, result1];
           } else {
             result0 = null;
             pos = pos1;
@@ -222,7 +234,7 @@ window.peg = (function(){
           pos = pos1;
         }
         if (result0 !== null) {
-          result0 = (function(offset, value) {return {type:'statement', value:value}})(pos0, result0[1]);
+          result0 = (function(offset, lines) {return lines})(pos0, result0[0]);
         }
         if (result0 === null) {
           pos = pos0;
@@ -285,228 +297,123 @@ window.peg = (function(){
       }
       
       function parse_chain() {
-        var result0, result1, result2, result3;
-        var pos0, pos1, pos2, pos3;
+        var result0, result1, result2, result3, result4;
+        var pos0, pos1, pos2, pos3, pos4, pos5;
         
-        pos0 = pos;
-        pos1 = pos;
-        result0 = parse_set();
+        result0 = parse_string();
         if (result0 === null) {
-          result0 = parse_element();
-          if (result0 === null) {
-            result0 = parse_string();
-          }
-        }
-        if (result0 !== null) {
-          result1 = [];
+          pos0 = pos;
+          pos1 = pos;
           pos2 = pos;
           pos3 = pos;
-          result2 = parse_slash();
-          if (result2 !== null) {
-            result3 = parse_set();
-            if (result3 === null) {
+          result0 = parse_element();
+          if (result0 !== null) {
+            result1 = [];
+            pos4 = pos;
+            pos5 = pos;
+            result2 = parse_slash();
+            if (result2 !== null) {
               result3 = parse_element();
               if (result3 === null) {
                 result3 = parse_string();
-              }
-            }
-            if (result3 !== null) {
-              result2 = [result2, result3];
-            } else {
-              result2 = null;
-              pos = pos3;
-            }
-          } else {
-            result2 = null;
-            pos = pos3;
-          }
-          if (result2 !== null) {
-            result2 = (function(offset, e) {return e})(pos2, result2[1]);
-          }
-          if (result2 === null) {
-            pos = pos2;
-          }
-          while (result2 !== null) {
-            result1.push(result2);
-            pos2 = pos;
-            pos3 = pos;
-            result2 = parse_slash();
-            if (result2 !== null) {
-              result3 = parse_set();
-              if (result3 === null) {
-                result3 = parse_element();
-                if (result3 === null) {
-                  result3 = parse_string();
-                }
               }
               if (result3 !== null) {
                 result2 = [result2, result3];
               } else {
                 result2 = null;
-                pos = pos3;
+                pos = pos5;
               }
             } else {
               result2 = null;
-              pos = pos3;
+              pos = pos5;
             }
             if (result2 !== null) {
-              result2 = (function(offset, e) {return e})(pos2, result2[1]);
+              result2 = (function(offset, e) {return e})(pos4, result2[1]);
             }
             if (result2 === null) {
-              pos = pos2;
+              pos = pos4;
             }
-          }
-          if (result1 !== null) {
-            result0 = [result0, result1];
+            while (result2 !== null) {
+              result1.push(result2);
+              pos4 = pos;
+              pos5 = pos;
+              result2 = parse_slash();
+              if (result2 !== null) {
+                result3 = parse_element();
+                if (result3 === null) {
+                  result3 = parse_string();
+                }
+                if (result3 !== null) {
+                  result2 = [result2, result3];
+                } else {
+                  result2 = null;
+                  pos = pos5;
+                }
+              } else {
+                result2 = null;
+                pos = pos5;
+              }
+              if (result2 !== null) {
+                result2 = (function(offset, e) {return e})(pos4, result2[1]);
+              }
+              if (result2 === null) {
+                pos = pos4;
+              }
+            }
+            if (result1 !== null) {
+              result0 = [result0, result1];
+            } else {
+              result0 = null;
+              pos = pos3;
+            }
           } else {
             result0 = null;
-            pos = pos1;
+            pos = pos3;
           }
-        } else {
-          result0 = null;
-          pos = pos1;
-        }
-        if (result0 !== null) {
-          result0 = (function(offset, first, rest) {return  {type:'chain', value:[first].concat(rest)}})(pos0, result0[0], result0[1]);
-        }
-        if (result0 === null) {
-          pos = pos0;
-        }
-        return result0;
-      }
-      
-      function parse_set() {
-        var result0, result1, result2, result3, result4, result5, result6, result7;
-        var pos0, pos1, pos2, pos3;
-        
-        pos0 = pos;
-        pos1 = pos;
-        if (input.charCodeAt(pos) === 91) {
-          result0 = "[";
-          pos++;
-        } else {
-          result0 = null;
-          if (reportFailures === 0) {
-            matchFailed("\"[\"");
+          if (result0 !== null) {
+            result0 = (function(offset, first, rest) {return [first].concat(rest)})(pos2, result0[0], result0[1]);
           }
-        }
-        if (result0 !== null) {
-          result1 = parse_nlw();
-          if (result1 !== null) {
-            result2 = parse_unit();
-            if (result2 !== null) {
-              result3 = [];
-              pos2 = pos;
-              pos3 = pos;
-              result4 = parse_nlw();
-              if (result4 !== null) {
-                if (input.charCodeAt(pos) === 44) {
-                  result5 = ",";
-                  pos++;
-                } else {
-                  result5 = null;
-                  if (reportFailures === 0) {
-                    matchFailed("\",\"");
-                  }
-                }
-                if (result5 !== null) {
-                  result6 = parse_nlw();
-                  if (result6 !== null) {
-                    result7 = parse_unit();
-                    if (result7 !== null) {
-                      result4 = [result4, result5, result6, result7];
-                    } else {
-                      result4 = null;
-                      pos = pos3;
-                    }
+          if (result0 === null) {
+            pos = pos2;
+          }
+          if (result0 !== null) {
+            pos2 = pos;
+            pos3 = pos;
+            result1 = parse_slash();
+            result1 = result1 !== null ? result1 : "";
+            if (result1 !== null) {
+              result2 = parse_EOL();
+              if (result2 !== null) {
+                result3 = parse_INDENT();
+                if (result3 !== null) {
+                  result4 = parse_block();
+                  if (result4 !== null) {
+                    result1 = [result1, result2, result3, result4];
                   } else {
-                    result4 = null;
+                    result1 = null;
                     pos = pos3;
                   }
                 } else {
-                  result4 = null;
+                  result1 = null;
                   pos = pos3;
                 }
               } else {
-                result4 = null;
+                result1 = null;
                 pos = pos3;
               }
-              if (result4 !== null) {
-                result4 = (function(offset, e) {return e})(pos2, result4[3]);
-              }
-              if (result4 === null) {
-                pos = pos2;
-              }
-              while (result4 !== null) {
-                result3.push(result4);
-                pos2 = pos;
-                pos3 = pos;
-                result4 = parse_nlw();
-                if (result4 !== null) {
-                  if (input.charCodeAt(pos) === 44) {
-                    result5 = ",";
-                    pos++;
-                  } else {
-                    result5 = null;
-                    if (reportFailures === 0) {
-                      matchFailed("\",\"");
-                    }
-                  }
-                  if (result5 !== null) {
-                    result6 = parse_nlw();
-                    if (result6 !== null) {
-                      result7 = parse_unit();
-                      if (result7 !== null) {
-                        result4 = [result4, result5, result6, result7];
-                      } else {
-                        result4 = null;
-                        pos = pos3;
-                      }
-                    } else {
-                      result4 = null;
-                      pos = pos3;
-                    }
-                  } else {
-                    result4 = null;
-                    pos = pos3;
-                  }
-                } else {
-                  result4 = null;
-                  pos = pos3;
-                }
-                if (result4 !== null) {
-                  result4 = (function(offset, e) {return e})(pos2, result4[3]);
-                }
-                if (result4 === null) {
-                  pos = pos2;
-                }
-              }
-              if (result3 !== null) {
-                result4 = parse_nlw();
-                if (result4 !== null) {
-                  if (input.charCodeAt(pos) === 93) {
-                    result5 = "]";
-                    pos++;
-                  } else {
-                    result5 = null;
-                    if (reportFailures === 0) {
-                      matchFailed("\"]\"");
-                    }
-                  }
-                  if (result5 !== null) {
-                    result0 = [result0, result1, result2, result3, result4, result5];
-                  } else {
-                    result0 = null;
-                    pos = pos1;
-                  }
-                } else {
-                  result0 = null;
-                  pos = pos1;
-                }
-              } else {
-                result0 = null;
-                pos = pos1;
-              }
+            } else {
+              result1 = null;
+              pos = pos3;
+            }
+            if (result1 !== null) {
+              result1 = (function(offset, b) {return b})(pos2, result1[3]);
+            }
+            if (result1 === null) {
+              pos = pos2;
+            }
+            result1 = result1 !== null ? result1 : "";
+            if (result1 !== null) {
+              result0 = [result0, result1];
             } else {
               result0 = null;
               pos = pos1;
@@ -515,30 +422,15 @@ window.peg = (function(){
             result0 = null;
             pos = pos1;
           }
-        } else {
-          result0 = null;
-          pos = pos1;
-        }
-        if (result0 !== null) {
-          result0 = (function(offset, first, rest) {return {type:'set', value:[first].concat(rest)}})(pos0, result0[2], result0[3]);
-        }
-        if (result0 === null) {
-          pos = pos0;
-        }
-        return result0;
-      }
-      
-      function parse_unit() {
-        var result0;
-        
-        result0 = parse_arg();
-        if (result0 === null) {
-          result0 = parse_string();
+          if (result0 !== null) {
+            result0 = (function(offset, parts, block) {
+              result =  {type:'chain', parts:parts};
+              if (block != "") {result.parts.push(block);}
+              return result;  
+            })(pos0, result0[0], result0[1]);
+          }
           if (result0 === null) {
-            result0 = parse_chain();
-            if (result0 === null) {
-              result0 = parse_element();
-            }
+            pos = pos0;
           }
         }
         return result0;
@@ -685,68 +577,6 @@ window.peg = (function(){
         }
         if (result0 === null) {
           pos = pos0;
-        }
-        return result0;
-      }
-      
-      function parse_symbol() {
-        var result0, result1, result2;
-        var pos0, pos1;
-        
-        result0 = parse_arg();
-        if (result0 === null) {
-          pos0 = pos;
-          pos1 = pos;
-          result0 = parse_w();
-          if (result0 !== null) {
-            if (/^[a-z0-9_]/.test(input.charAt(pos))) {
-              result2 = input.charAt(pos);
-              pos++;
-            } else {
-              result2 = null;
-              if (reportFailures === 0) {
-                matchFailed("[a-z0-9_]");
-              }
-            }
-            if (result2 !== null) {
-              result1 = [];
-              while (result2 !== null) {
-                result1.push(result2);
-                if (/^[a-z0-9_]/.test(input.charAt(pos))) {
-                  result2 = input.charAt(pos);
-                  pos++;
-                } else {
-                  result2 = null;
-                  if (reportFailures === 0) {
-                    matchFailed("[a-z0-9_]");
-                  }
-                }
-              }
-            } else {
-              result1 = null;
-            }
-            if (result1 !== null) {
-              result2 = parse_w();
-              if (result2 !== null) {
-                result0 = [result0, result1, result2];
-              } else {
-                result0 = null;
-                pos = pos1;
-              }
-            } else {
-              result0 = null;
-              pos = pos1;
-            }
-          } else {
-            result0 = null;
-            pos = pos1;
-          }
-          if (result0 !== null) {
-            result0 = (function(offset, v) {return {type:'symbol', value:v.join('')}})(pos0, result0[1]);
-          }
-          if (result0 === null) {
-            pos = pos0;
-          }
         }
         return result0;
       }
@@ -1290,6 +1120,110 @@ window.peg = (function(){
         return result0;
       }
       
+      function parse_symbol() {
+        var result0, result1, result2;
+        var pos0, pos1;
+        
+        result0 = parse_arg();
+        if (result0 === null) {
+          pos0 = pos;
+          pos1 = pos;
+          result0 = parse_w();
+          if (result0 !== null) {
+            if (/^[a-z0-9_]/.test(input.charAt(pos))) {
+              result2 = input.charAt(pos);
+              pos++;
+            } else {
+              result2 = null;
+              if (reportFailures === 0) {
+                matchFailed("[a-z0-9_]");
+              }
+            }
+            if (result2 !== null) {
+              result1 = [];
+              while (result2 !== null) {
+                result1.push(result2);
+                if (/^[a-z0-9_]/.test(input.charAt(pos))) {
+                  result2 = input.charAt(pos);
+                  pos++;
+                } else {
+                  result2 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("[a-z0-9_]");
+                  }
+                }
+              }
+            } else {
+              result1 = null;
+            }
+            if (result1 !== null) {
+              result2 = parse_w();
+              if (result2 !== null) {
+                result0 = [result0, result1, result2];
+              } else {
+                result0 = null;
+                pos = pos1;
+              }
+            } else {
+              result0 = null;
+              pos = pos1;
+            }
+          } else {
+            result0 = null;
+            pos = pos1;
+          }
+          if (result0 !== null) {
+            result0 = (function(offset, v) {return {type:'symbol', value:v.join('')}})(pos0, result0[1]);
+          }
+          if (result0 === null) {
+            pos = pos0;
+          }
+        }
+        return result0;
+      }
+      
+      function parse_slash() {
+        var result0, result1, result2;
+        var pos0, pos1;
+        
+        pos0 = pos;
+        pos1 = pos;
+        result0 = parse_w();
+        if (result0 !== null) {
+          if (input.charCodeAt(pos) === 47) {
+            result1 = "/";
+            pos++;
+          } else {
+            result1 = null;
+            if (reportFailures === 0) {
+              matchFailed("\"/\"");
+            }
+          }
+          if (result1 !== null) {
+            result2 = parse_w();
+            if (result2 !== null) {
+              result0 = [result0, result1, result2];
+            } else {
+              result0 = null;
+              pos = pos1;
+            }
+          } else {
+            result0 = null;
+            pos = pos1;
+          }
+        } else {
+          result0 = null;
+          pos = pos1;
+        }
+        if (result0 !== null) {
+          result0 = (function(offset) {return "/"})(pos0);
+        }
+        if (result0 === null) {
+          pos = pos0;
+        }
+        return result0;
+      }
+      
       function parse_number() {
         var result0, result1, result2;
         var pos0, pos1;
@@ -1496,47 +1430,22 @@ window.peg = (function(){
         return result0;
       }
       
-      function parse_nlw() {
-        var result0, result1;
+      function parse_tab() {
+        var result0;
         var pos0;
         
         pos0 = pos;
-        result0 = [];
-        if (input.charCodeAt(pos) === 32) {
-          result1 = " ";
+        if (/^[\t]/.test(input.charAt(pos))) {
+          result0 = input.charAt(pos);
           pos++;
         } else {
-          result1 = null;
+          result0 = null;
           if (reportFailures === 0) {
-            matchFailed("\" \"");
-          }
-        }
-        if (result1 === null) {
-          result1 = parse_tab();
-          if (result1 === null) {
-            result1 = parse_newline();
-          }
-        }
-        while (result1 !== null) {
-          result0.push(result1);
-          if (input.charCodeAt(pos) === 32) {
-            result1 = " ";
-            pos++;
-          } else {
-            result1 = null;
-            if (reportFailures === 0) {
-              matchFailed("\" \"");
-            }
-          }
-          if (result1 === null) {
-            result1 = parse_tab();
-            if (result1 === null) {
-              result1 = parse_newline();
-            }
+            matchFailed("[\\t]");
           }
         }
         if (result0 !== null) {
-          result0 = (function(offset, val) {return []})(pos0, result0);
+          result0 = (function(offset) {return "\t" })(pos0);
         }
         if (result0 === null) {
           pos = pos0;
@@ -1559,9 +1468,6 @@ window.peg = (function(){
             matchFailed("\" \"");
           }
         }
-        if (result1 === null) {
-          result1 = parse_tab();
-        }
         while (result1 !== null) {
           result0.push(result1);
           if (input.charCodeAt(pos) === 32) {
@@ -1573,15 +1479,49 @@ window.peg = (function(){
               matchFailed("\" \"");
             }
           }
-          if (result1 === null) {
-            result1 = parse_tab();
-          }
         }
         if (result0 !== null) {
           result0 = (function(offset, string) {return string.join('')})(pos0, result0);
         }
         if (result0 === null) {
           pos = pos0;
+        }
+        return result0;
+      }
+      
+      function parse_EOL() {
+        var result0;
+        
+        if (input.substr(pos, 2) === "\r\n") {
+          result0 = "\r\n";
+          pos += 2;
+        } else {
+          result0 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"\\r\\n\"");
+          }
+        }
+        if (result0 === null) {
+          if (input.charCodeAt(pos) === 10) {
+            result0 = "\n";
+            pos++;
+          } else {
+            result0 = null;
+            if (reportFailures === 0) {
+              matchFailed("\"\\n\"");
+            }
+          }
+          if (result0 === null) {
+            if (input.charCodeAt(pos) === 13) {
+              result0 = "\r";
+              pos++;
+            } else {
+              result0 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"\\r\"");
+              }
+            }
+          }
         }
         return result0;
       }
@@ -1609,22 +1549,110 @@ window.peg = (function(){
         return result0;
       }
       
-      function parse_tab() {
-        var result0;
+      function parse_SAMEDENT() {
+        var result0, result1;
         var pos0;
         
         pos0 = pos;
-        if (/^[\t]/.test(input.charAt(pos))) {
-          result0 = input.charAt(pos);
+        result0 = [];
+        if (/^[ \t]/.test(input.charAt(pos))) {
+          result1 = input.charAt(pos);
           pos++;
         } else {
-          result0 = null;
+          result1 = null;
           if (reportFailures === 0) {
-            matchFailed("[\\t]");
+            matchFailed("[ \\t]");
+          }
+        }
+        while (result1 !== null) {
+          result0.push(result1);
+          if (/^[ \t]/.test(input.charAt(pos))) {
+            result1 = input.charAt(pos);
+            pos++;
+          } else {
+            result1 = null;
+            if (reportFailures === 0) {
+              matchFailed("[ \\t]");
+            }
           }
         }
         if (result0 !== null) {
-          result0 = (function(offset) {return "\t" })(pos0);
+          result1 = (function(offset, i) { return i.join("") === indent; })(pos, result0) ? "" : null;
+          if (result1 !== null) {
+            result0 = [result0, result1];
+          } else {
+            result0 = null;
+            pos = pos0;
+          }
+        } else {
+          result0 = null;
+          pos = pos0;
+        }
+        return result0;
+      }
+      
+      function parse_INDENT() {
+        var result0, result1;
+        var pos0, pos1;
+        
+        pos0 = pos;
+        pos1 = pos;
+        if (/^[ \t]/.test(input.charAt(pos))) {
+          result1 = input.charAt(pos);
+          pos++;
+        } else {
+          result1 = null;
+          if (reportFailures === 0) {
+            matchFailed("[ \\t]");
+          }
+        }
+        if (result1 !== null) {
+          result0 = [];
+          while (result1 !== null) {
+            result0.push(result1);
+            if (/^[ \t]/.test(input.charAt(pos))) {
+              result1 = input.charAt(pos);
+              pos++;
+            } else {
+              result1 = null;
+              if (reportFailures === 0) {
+                matchFailed("[ \\t]");
+              }
+            }
+          }
+        } else {
+          result0 = null;
+        }
+        if (result0 !== null) {
+          result1 = (function(offset, i) { return i.length > indent.length; })(pos, result0) ? "" : null;
+          if (result1 !== null) {
+            result0 = [result0, result1];
+          } else {
+            result0 = null;
+            pos = pos1;
+          }
+        } else {
+          result0 = null;
+          pos = pos1;
+        }
+        if (result0 !== null) {
+          result0 = (function(offset, i) { indentStack.push(indent); indent = i.join(""); pos = offset; })(pos0, result0[0]);
+        }
+        if (result0 === null) {
+          pos = pos0;
+        }
+        return result0;
+      }
+      
+      function parse_DEDENT() {
+        var result0;
+        var pos0, pos1;
+        
+        pos0 = pos;
+        pos1 = pos;
+        result0 = [];
+        if (result0 !== null) {
+          result0 = (function(offset) { indent = indentStack.pop(); })(pos0);
         }
         if (result0 === null) {
           pos = pos0;
@@ -1678,6 +1706,7 @@ window.peg = (function(){
         return { line: line, column: column };
       }
       
+       var indentStack = [], indent = ""; 
       
       var result = parseFunctions[startRule]();
       

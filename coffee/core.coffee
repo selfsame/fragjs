@@ -43,7 +43,8 @@ _:: =
 	constructor: ->
 		this
 	nombre: "prototype"
-	
+
+
 
 	__return_proxy: (master) ->
 		proxy = (args...)->
@@ -119,8 +120,8 @@ _:: =
 
 	__setup: (args) ->
 		@__note_args args
-		@__parse this
-		@__construct_frag this, @__parsed, @__root
+		@__parse @
+		@__construct_frag @, @__parsed, @__root
 
 	__report_props: ->
 		result = {}
@@ -157,7 +158,10 @@ _:: =
 	__construct_frag: (me, obj, h) ->
 		head = h
 		token = obj
-		if token.type is "assign"
+		if token instanceof Array
+			for line in token
+				me.__construct_frag me, line, h
+		else if token.type is "assign"
 			#console.log "assign", token
 			f = document.createDocumentFragment()
 			me.__construct_frag me, token.right, f
@@ -207,14 +211,7 @@ _:: =
 			#we use a number for generic children in the tree
 
 			el
-		else if token.type is "set"
-			#console.log "set"
-			i = 0
-			while i < token.value.length
-				t = token.value[i]
-				me.__construct_frag me, t, head
-				i++
-			head
+
 		else if typeof obj is "object" and obj.length > 0
 			hh = head
 			i = 0
@@ -225,6 +222,7 @@ _:: =
 				i++
 
 	__parse: (me) ->
+		console.log "parse!"
 		template = me.__template
 		i = 0
 		while i < @__args.length
@@ -247,6 +245,8 @@ _:: =
 			i++
 		#console.log template
 		me.__parsed = window.peg.parse(template)
+		console.log template
+		console.log me.__parsed
 
 body = document.getElementsByTagName("body")[0]
 ###
@@ -280,10 +280,53 @@ view = view("div:main#wrapper/[sidebar, div:blog#blog/post]")
 
 body.appendChild view.__root
 
-#class Cow extends Function
-#	constructor: (@n)->
-#		console.log 'cow init'
-#	valueOf: ->
-#		return {@n}
-#cow = {name:'bessy'}
-#cow.call = Function::.call
+###
+
+
+# calling _("stuff") should create a new instance of _ with a document fragment, and handle the "stuff"
+# calling intance("stuff") should handle the stuff but retain the same instance
+
+
+
+_extend = (obj, parent)->
+	for key of parent 
+		if parent.hasOwnProperty(key)
+			obj[key] = parent[key]
+
+class FragInstance
+	sources: []
+	operate: (source)->
+		@sources.push source
+
+Frag = (source, instance=false)->
+	if not instance
+		instance = (source)->
+			return Frag(source, instance)
+		_extend(instance, FragInstance::)
+	else
+		console.log 'frag was passed an instance'
+	instance.operate source
+	console.log instance.sources
+	return instance
+
+joe = new Frag('one')
+bob = joe('two')
+
+new_font = """
+new_font = div.new_font
+	label.name
+		"family name"
+		input:family.name
+	label.name
+		"script url"
+		textarea:script.script
+	button:done.float_right {disabled:true}/"done"
+	button:cancel.float_right/"cancel"
+	hr 
+"""
+
+view = new _("div")
+view = view(new_font)
+
+
+body.appendChild(view.__root)
