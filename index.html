@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<head>
+
+<script src="./parser.js" type="text/javascript" ></script>
+<script src="./js/core.js" type="text/javascript" ></script>
+<div style="display:none;" id="joe">
+
+header = div#header/[
+	img{src:%3}, 
+	h1/"title", 
+	sections ]
+
+links = div#links/ol/%2
+
+article = div.article/[
+	h1/'myblog', 
+	div#date/ %1, 
+	p/'blog text here' ]
+
+div:myblog#blog/[header, article, links]
+</div>
+
+<script>
+body = document.getElementsByTagName("body")[0];
+joe = document.getElementById("joe");
+
+words = ['poop', 'fart', 'butt', 'frogs', 'cats']
+list = []
+for (var i = 0; i<10; i++){ list.push( "a.link/h3/'"+words[i%4]+"' " ) }
+
+blog = new _('div/p');
+blog = blog( joe.innerHTML, String(new Date()), list, "./icon.png" );
+
+
+body.appendChild(blog.myblog);
+
+</script>
+</head>
+<body></body>
+<!--
+<div id="blog">
+	<div id="header">
+		<img url="./icon.png">
+		<h1>title</h1>
+		<sections></sections>
+	</div>
+	<div class="article">
+		<h1>myblog</h1>
+		<div id="date">Sun Aug 04 2013 20:22:46 GMT-0400 (Eastern Daylight Time)</div>
+		<p>blog text here</p>
+	</div>
+	<div id="links">
+		<ol>
+			<a class="link"><h3>poop</h3></a>
+			<a class="link"><h3>fart</h3></a>
+			<a class="link"><h3>butt</h3></a>
+			<a class="link"><h3>frogs</h3></a>
+			<a class="link"><h3>poop</h3></a>
+			<a class="link"><h3>fart</h3></a>
+			<a class="link"><h3>butt</h3></a>
+			<a class="link"><h3>frogs</h3></a>
+			<a class="link"><h3>poop</h3></a>
+			<a class="link"><h3>fart</h3></a>
+		</ol>
+	</div>
+</div>
+-->

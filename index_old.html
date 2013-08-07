@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<head>
+	<title>roll thy own</title>
+</head>
+
+<body>
+
+
+
+<script src="./parser.js" type="text/javascript" ></script>
+<script>
+	body = document.getElementsByTagName('body')[0];
+
+	$ = function() {
+		fn = function(){
+			return $();
+		}
+
+		fn.__proto__ = fn.prototype = $.prototype;
+
+
+    	return fn;
+	}
+	$.prototype = {
+	    constructor: $,
+	};
+
+	_ = function(){
+		if (!(this instanceof _)) {
+
+        	result = new _(arguments);
+        	//result.__note_args(arguments);
+        	return result
+        } else {
+	        if (arguments.callee.instance) {
+
+	        	arguments.callee.instance.__note_args(arguments[0]);
+		    	arguments.callee.instance.__parse(arguments.callee.instance.__template);
+		    	return arguments.callee.instance;
+		    }
+		}
+
+	    arguments.callee.instance = this;
+
+
+		this.__note_args = function(arguments){
+			console.log(arguments);
+			this.__args = Array.prototype.slice.call(arguments);
+			
+	    	this.__template = this.__args[0];
+	    	this.__args = this.__args.slice(1, this.__args.length+1);
+	    	console.log('__args:', this.__args);
+	    	
+		}
+		
+		this.__frag = document.createDocumentFragment(); 
+
+
+		this.attach_to = function(el){
+			el.appendChild(this.__frag);
+		}
+
+		this.__resolve_symbol = function(token){
+				if (token.type == 'symbol'){return token.value;}
+				if (token.type == 'arg'){
+					if (this.__args[parseInt(token.value)-1]){
+						return this.__args[parseInt(token.value)-1];
+					}
+				}
+			}
+		this.__construct_frag = function(obj, h){
+			
+			var head = h;
+			var token = obj;
+			if (token.type == "assign"){
+				console.log("assign");
+				var f = document.createDocumentFragment();
+				this.__construct_frag(token.right, f)
+				this[this.__resolve_symbol(token.left)] = f 
+				return head;
+			} 
+			else if (token.type == "statement"){
+				head = this.__frag
+				console.log("statement");
+				this.__construct_frag(token.value, h)
+				return head;
+			}  
+			else if (token.type == "chain"){
+				this.__construct_frag(token.value, head)
+				return head;
+			} 
+
+			else if (token.type == "text"){
+
+				text = document.createTextNode(token.value);
+				head.appendChild(text);
+				return head;
+			} 
+			else if (token.type == "element"){
+				var tag = this.__resolve_symbol(token.tag);
+
+				if (this[tag]){
+					var el = this[tag].cloneNode(true);
+				} else {
+					var el = document.createElement(tag)
+					if (token.id) el.id = this.__resolve_symbol(token.id); 
+					if (token.classes) el.className = token.classes.join(' ');
+					if (!head.namespace) {head.namespace = {}}
+					if (token.label) {
+
+						head.namespace[this.__resolve_symbol(token.label)] = el
+					}
+					if (token.json){
+						for (key in token.json){
+							v = this.__resolve_symbol(token.json[key])
+							el.setAttribute(key, v);
+						}
+					}
+				}
+				
+				
+				
+				head.appendChild(el);
+
+				
+				return el;
+			}
+			else if (token.type == "set"){
+				console.log( 'set', head );
+				for (var i=0; i < token.value.length;i++){
+					t = token.value[i];
+					console.log( t );
+					this.__construct_frag(t, head);
+				}
+				return head;
+			} 
+			else if (typeof obj == "object" && obj.length > 0) {
+				var hh = head;
+				for (var i=0; i < obj.length;i++){
+					token = obj[i];
+					
+					var b = this.__construct_frag(token, hh);
+					console.log( 'head', b);
+					hh = b;
+				}
+				
+			}
+			
+			
+		}
+
+		this.__parse = function(template) {
+			this.__parsed = window.peg.parse(template);
+			this.__construct_frag(this.__parsed, this.__frag);
+		}
+
+		this.constructor = function(arguments){
+			
+			return new _([arguments]);
+		}
+
+		this.__note_args(arguments);
+		this.__parse(this.__template);
+
+		for (key in this) {
+			if (this.hasOwnProperty(key)) {
+				console.log("OWNPROP", key);
+				_[key] = this[key];
+			}
+		}
+		return this;
+	}
+
+
+
+	view = new _("main = div:main#%1", 'wrapper');
+	_("thing = div/p")
+	_("pagelink = a{href:'./blog.html'}/[ img.icon{src:'./img/icon.png'}, span:text.name/'link']", "symbolic");
+	_("pagelist = ol:pagelist#pages/[ li/pagelink,li/pagelink,li/pagelink]");
+	_("sidebar = div:sidebar#sidebar/[div:logo.logo,  pagelist]");
+	_('div:main#wrapper/[sidebar, div:blog#blog/[h1/"my new blog", p/"This is a paragraph."]]');
+
+	_("").attach_to(body);
+
+	/*
+	info = new _("");
+	_("div:about")
+	// div is attached to info and about is mapped to the info namespace
+
+	_("item = li/label/['item text', input:checkbox{type:'checkbox'}]")
+
+	// about gets an attachment
+	info.about("[h1:header, item, item, item]")
+
+	// if it's not a direct part of the namespace we can use functions to query
+	checkbox = info.about.find(':checkbox')[0] // [node, node..]
+	
+	checkbox('../../')
+
+
+	// we can navigate the namespace
+	info.about.header("'A collection of stuff.'")
+	//info.item.attach_to( view.sidebar );
+	*/
+	$ = function() {
+		fn = function(){
+			return $();
+		}
+
+		fn.__proto__ = fn.prototype = $.prototype;
+
+
+    	return fn;
+	}
+	$.prototype = {
+	    constructor: $,
+	};
+	x = $('joe')
+	
+</script>
+</body>
+
+
+
