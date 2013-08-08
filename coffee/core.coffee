@@ -1,4 +1,172 @@
 
+
+
+Frag = (args...)->
+	if not args[0]?.__fragment__?
+		instance = (args...)->
+			Array.prototype.splice.call(arguments, 0,0, instance)
+			return Frag.apply(Frag, arguments)
+		FragConstructor.apply(instance)
+	else
+		instance = args[0]
+		Array.prototype.shift.call(arguments, 1)
+
+	console.log arguments
+	instance.__parse.apply(instance, arguments)
+	return instance
+
+FragConstructor = ()->
+	@__fragment__ = true
+	@__root = document.createDocumentFragment()
+	@__root.__namespace = {}
+	@__scope = @__root
+	
+
+	@__parse = (args...) ->
+		console.log "parse!"
+		template = args[0]
+		console.log template
+		i = 1
+		while i < args.length
+			regex = new RegExp("%" + (i + 1), "gi")
+			arg = args[i]
+			if typeof arg is "string"
+				arg = "\"" + arg + "\""
+			else if arg instanceof Array
+				arg = arg.join(", ")
+				arg = "[" + arg + "]"  if arg.length > 1
+			else if typeof arg is "object"
+				set = []
+				c = 0
+				for key of arg
+					c += 1
+					set.push key
+				arg = set.join(", ")
+				arg = "[" + arg + "]"  if set.length > 1
+			template = template.replace(regex, arg)
+			i++
+		#console.log template
+		@__parsed = window.peg.parse(template)
+		console.log template
+		console.log @__parsed
+
+		@__construct_frag(@__parsed, @__root)
+
+
+
+	@attach_to = (el) ->
+		el.appendChild @__root.childNodes[0].cloneNode()
+
+	@__resolve_symbol = (token) ->
+		return token  if typeof token is "string"
+		return token.value  if token.type is "symbol"
+		return token.value  if token.type is "text"
+		if token.type is "arg"
+			if @__args[parseInt(token.value) - 1]
+				return @__args[parseInt(token.value) - 1]
+
+
+	@__construct_frag = (token, head) ->
+		console.log 'construct', token, head
+		if token instanceof Array
+			for line in token
+				head = @__construct_frag line, head
+			head
+		else if token.type is "assign"
+			#f = document.createDocumentFragment()
+			@__construct_frag token.right, head
+			#@__add_symbol @.__root, @.__resolve_symbol(token.left), f
+			head
+		else if token.type is "statement"
+			hh= @__root
+			#console.log "statement", token
+			@__construct_frag token.value, hh
+			hh
+		else if token.type is "chain"
+			@__construct_frag token.parts, head
+			head
+		else if token.type is "arg"
+			#console.log "arg", token
+			if @__args[parseInt(token.value) - 1]
+				text = document.createTextNode(@__args[parseInt(token.value) - 1])
+				head.appendChild text
+			head
+		else if token.type is "text"
+			text = document.createTextNode(token.value)
+			head.appendChild text
+			head
+		else if token.type is "element"
+			tag = @__resolve_symbol(token.tag)
+			#assignments are in the top namespace for now
+			if @__root.__namespace[tag]
+				el = @__root.__namespace[tag].cloneNode(true)
+			else
+				el = document.createElement(tag)
+				el.id = @__resolve_symbol(token.id)  if token.id
+				if token.classes
+					total = []
+					for c in token.classes
+						total.push @__resolve_symbol(c)
+					el.className = total.join(" ")  
+
+				if token.json
+					for key of token.json
+						v = @__resolve_symbol(token.json[key])
+						el.setAttribute key, v
+				if token.label
+					console.log 'label: ', token.label
+					#@__add_symbol head, @__resolve_symbol(token.label), el
+			head.appendChild el
+			el
+
+		else if typeof token is "object" and token.length > 0
+			hh = head
+			i = 0
+			while i < token.length
+				token = token[i]
+				b = @__construct_frag( token, hh)
+				hh = b
+				i++
+
+
+new_font = """
+widget = div.new_font
+	label.name
+		"family name"
+		input:family.name
+	label.name
+		"script url"
+		textarea:script.script
+	button:done.float_right {disabled:true}/"done"
+	button:cancel.float_right/"cancel"
+	hr 
+"""
+#body = document.getElementsByTagName("body")[0]
+#view = Frag(new_font)
+#view.attach_to(body)
+
+
+###	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 _ = (args...)->
 	fn = (args...)->
 			#console.log(Array.prototype.slice.call(arguments));
@@ -22,18 +190,7 @@ _ = (args...)->
 		fn.__scope = fn.__root
 	_.old = false
 
-	###
-	fn.valueOf = ()->
-		if @__scope
-			return @__scope.valueOf()
-		else
-			return @
-	fn.toString = ()->
-		if @__scope
-			return @__scope.toString()
-		else
-			return @
-	###
+
 		#fn.__note_args(arguments);
 	#fn.__setup(args);
 	fn
@@ -105,19 +262,6 @@ _:: =
 		catch error
 			console.log "cant define getter for ", prop
 
-	__register: (node, el)->
-		#if head is @__namespace['__frag'].__node
-		#	console.log 'root'
-		#namespace = @__scope_to_namespace(@__scope)
-		#if not namespace
-		#	console.log "namespace error: ", @__scope
-		#	return
-		#if not namespace.__children
-		#	namespace.__children = []
-		#console.log 'register', namespace
-		#namespace.__children = namespace.__children.concat(el)
-
-
 	__setup: (args) ->
 		@__note_args args
 		@__parse @
@@ -132,10 +276,9 @@ _:: =
 	__inherit_props: (ancestor) ->
 		if ancestor
 			for key of ancestor
-				#if not key.slice(0,2) is '__' or key in ['__root', '__scope']
-				#	if key not in ["arguments", "constructor", "hasOwnProperty", "isPrototypeOf", "length", "name", "nombre", "old", "propertyIsEnumerable", "toLocaleString", "toString", "valueOf"]
 				console.log 'inherit key: ', key
 				@[key] = ancestor[key]  
+
 	__note_args: (args) ->
 		@__args = Array::slice.call(args)
 		#console.log args
@@ -249,68 +392,6 @@ _:: =
 		console.log me.__parsed
 
 body = document.getElementsByTagName("body")[0]
-###
-links = [
-	title: "Rolling Your Own"
-	file: "roll_your_own"
-,
-	title: "PongScript"
-	file: "pongscript"
-,
-	title: "Hello World"
-	file: "hello"
-]
-links = links.map((part) ->
-	icon = "./img/icon1.png"
-	"li/a{href:'./posts/" + part.file + ".html'}/[ img{src:'" + icon + "'}, span.name/'" + part.title + "']"
-)
-console.log links
-view = new _("div/div")
-view.nombre = "Joseph Parker"
-view = view("div:main#%1/h1/'Hello..'", {wrapper:0})
-view = view("thing = div/p")
-
-#view = view("pagelink = li/a#%1{href:'./blog.html'}/[ img{src:%2}, span:text.name/'link']", {symbolic:0}, "./img/icon1.png");
-view = view("pagelist = ul:pagelist#pages/%1", links)
-view = view("sidebar = div:sidebar#sidebar/[div:logo.logo,  pagelist]")
-view = view("post=[h1/'Rolling your own html templates', h3.author/['Author: ', %2], code.date/['Date:', %1], p/ \"After a year of developing a single page web app with only jQuery, I'm hyper aware of the pain points that come with vanilla js/html/css interaction.  I'd put off investigating the popular MVC frameworks, but after looking them over I decided to write my own components to ease the workflow. \", p.right/%3/['- ', %2] ]", "Sun Aug 04 2013", view.nombre,
-	i: 0
-)
-view = view("div:main#wrapper/[sidebar, div:blog#blog/post]")
-
-body.appendChild view.__root
-
-###
-
-
-# calling _("stuff") should create a new instance of _ with a document fragment, and handle the "stuff"
-# calling intance("stuff") should handle the stuff but retain the same instance
-
-
-
-_extend = (obj, parent)->
-	for key of parent 
-		if parent.hasOwnProperty(key)
-			obj[key] = parent[key]
-
-class FragInstance
-	sources: []
-	operate: (source)->
-		@sources.push source
-
-Frag = (source, instance=false)->
-	if not instance
-		instance = (source)->
-			return Frag(source, instance)
-		_extend(instance, FragInstance::)
-	else
-		console.log 'frag was passed an instance'
-	instance.operate source
-	console.log instance.sources
-	return instance
-
-joe = new Frag('one')
-bob = joe('two')
 
 new_font = """
 new_font = div.new_font

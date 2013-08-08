@@ -6,14 +6,24 @@
 <body>
 <script src="./parser.js" type="text/javascript" ></script>
 <script src="./js/core.js" type="text/javascript" ></script>
-<div style="display:none;" id="joe">
 
 
+<div id="frags">widget = div.new_font
+	label.name
+		"family name"
+		input:family.name
+	label.name
+		"script url"
+		textarea:script.script
+	button:done.float_right {disabled:true}/"done"
+	button:cancel.float_right/"cancel"
+	hr 
 </div>
-
 <script>
-
-
+body = document.getElementsByTagName("body")[0];
+frags = document.getElementById("frags");
+view = Frag(frags.innerHTML);
+view.attach_to(body)
 </script>
 </body>
 <!--
